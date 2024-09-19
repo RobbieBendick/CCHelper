@@ -4,6 +4,7 @@ CCHelper.CCsToLookFor = {
     -- mage
     [118]    = true, -- polymorph
     [113724] = true, -- ring of frost
+    [31661]  = true, -- dragon's breath
 
     -- rogue
     [1833]   = true, -- cheap shot

@@ -199,13 +199,10 @@ function CCHelper:SimulateCC()
             self.CCBar:SetValue(remainingTime);
             self.CCBar.duration:SetFormattedText("%.1f", remainingTime);
         else
-            self.CCBar.testText:Hide();
-            self.CCBar:Hide();
             self.CCBar:SetScript("OnUpdate", nil);
         end
     end);
 end
-
 
 function CCHelper:EnableDragging()
     self.CCBar:Show();
@@ -240,7 +237,7 @@ local defaults = {
         ccBarPosition = { x = 0, y = -300 },
         ccBarWidth = 200,
         ccBarHeight = 20,
-        ccBarLocked = true,
+        ccBarLocked = false,
         testMode = false,
         showIcon = true,
         gracePeriod = 0.15,

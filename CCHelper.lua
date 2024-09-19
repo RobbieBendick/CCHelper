@@ -57,7 +57,7 @@ function CCHelper:CreateCCBar()
     self.CCBar.icon = self.CCBar:CreateTexture(nil, "OVERLAY");
     self.CCBar.icon:SetSize(20, 20);
     self.CCBar.icon:SetPoint("RIGHT", self.CCBar, "LEFT", -5, 0);
-    self.CCBar.icon:SetTexture(136071);
+    self.CCBar.icon:SetTexture(136071); -- polymorph icon id for placeholder
 
     self.CCBar.testText = self.CCBar:CreateFontString(nil, "OVERLAY");
     self.CCBar.testText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE");
@@ -74,27 +74,30 @@ function CCHelper:CreateCCBar()
 
     self.CCBar:Hide();
 end
+
 function CCHelper:FindLongestCCAndUpdateStatusBar()
     local _, class = UnitClass("player");
-
     if not CastedCCForClass[class] then return end
+
     local longestDuration = 0;
     local longestExpirationTime = 0;
     local longestDurationSpellID;
     local longestIconTexture;
 
-    AuraUtil.ForEachAura(self.healerUnitID, "HARMFUL", nil, function(name, icon, count, debuffType, duration, expirationTime, caster, canStealOrPurge, nameplateShowPersonal, spellID)
-        if self.CCsToLookFor[spellID] then
-            local remainingTime = expirationTime - GetTime();
-            if duration > longestDuration then
-                longestDuration = duration;
-                longestExpirationTime = expirationTime;
-                longestDurationSpellID = spellID;
-                longestIconTexture = icon;
+    for i=1, 40 do
+        local aura = C_UnitAuras.GetAuraDataByIndex(self.healerUnitID, i, "HARMFUL");
+        if not aura then break end
+        if self.CCsToLookFor[aura.spellId] then
+            local remainingTime = aura.expirationTime - GetTime();
+            if aura.duration > longestDuration then
+                longestDuration = aura.duration;
+                longestExpirationTime = aura.expirationTime;
+                longestDurationSpellID = aura.spellId;
+                longestIconTexture = aura.icon;
             end
         end
-        return true;
-    end);
+    end
+
     if longestDuration > 0 then
         local gracePeriod = self.db.profile.gracePeriod;
         local progressBarDuration = longestDuration - gracePeriod;
@@ -117,6 +120,7 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
             if adjustedValue > 0 then
                 adjustedValue = math.max(0, adjustedValue);
                 self.CCBar:SetValue(adjustedValue);
+                self.CCBar.duration:SetFormattedText("%.1f", adjustedValue);
             else
                 self.CCBar:Hide();
                 self.CCBar:SetScript("OnUpdate", nil);
