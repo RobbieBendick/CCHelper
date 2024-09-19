@@ -96,8 +96,14 @@ function CCHelper:CreateMenu()
                             self:UpdateGracePeriod();
                         end,
                     },
-                    showIcon = {
+                    spacer = {
                         order = 6,
+                        type = "description",
+                        name = "",
+                        width = 0.1,
+                    },
+                    showIcon = {
+                        order = 7,
                         type = "toggle",
                         name = "Show CC Icon",
                         desc = "Toggle the display of the icon showing what the enemy healer is CC'd with.",
@@ -106,9 +112,10 @@ function CCHelper:CreateMenu()
                             self.db.profile.showIcon = value;
                             self:UpdateIconVisibility();
                         end,
+                        width = 0.72,
                     },
                     showDuration = {
-                        order = 7,
+                        order = 8,
                         type = "toggle",
                         name = "Show duration",
                         desc = "Show the amount of seconds of before you need to cast.",
@@ -117,9 +124,10 @@ function CCHelper:CreateMenu()
                             self.db.profile.showDuration = value;
                             self:UpdateDurationVisibility();
                         end,
+                        width = 0.75,
                     },
                     testModeButton = {
-                        order = 8,
+                        order = 9,
                         type = "execute",
                         name = "Toggle Test Mode",
                         desc = "Click to toggle test mode on and off. You can drag to move the bar in test mode.",
