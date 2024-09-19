@@ -1,6 +1,5 @@
 local CCHelper = LibStub("AceAddon-3.0"):GetAddon("CCHelper");
 local GetSpellInfo = C_Spell.GetSpellInfo;
-local Details = Details;
 local HealerSpecs = {
     [105]  = true,  -- druid resto
     [270]  = true,  -- monk mw
@@ -10,7 +9,13 @@ local HealerSpecs = {
     [264]  = true,  -- shaman resto
     [1468] = true,  -- preservation evoker  
 }
-
+local CastedCCForClass = {
+    ["MAGE"] = 118, -- polymorph
+    ["EVOKER"] = 360806, -- sleep walk
+    ["DRUID"] = 33786, -- cyclone
+    ["WARLOCK"] = 5782, -- fear
+    ["SHAMAN"] = 11641, -- hex
+}
 
 function CCHelper:SetEnemyArenaHealerID()
     for i=1, 3 do
@@ -22,28 +27,24 @@ function CCHelper:SetEnemyArenaHealerID()
     end
 end
 
--- track cc breaks including dispels & PvP trinket use
 function CCHelper:HandleCombatLog()
     local _, eventType, _, _, _, _, _, destGUID, _, _, _, spellID = CombatLogGetCurrentEventInfo();
+    if not self.healerUnitID then return end
+    if destGUID ~= UnitGUID(self.healerUnitID) or not self.CCsToLookFor[spellID] then return end
 
-    if not (eventType == "SPELL_AURA_BROKEN" or eventType == "SPELL_AURA_BROKEN_SPELL" or eventType == "SPELL_DISPEL" or eventType == "SPELL_AURA_REMOVED") then
-        return;
+    -- track cc breaks including dispels & PvP trinket use
+    if eventType == "SPELL_AURA_BROKEN" or eventType == "SPELL_AURA_BROKEN_SPELL" or eventType == "SPELL_DISPEL" or eventType == "SPELL_AURA_REMOVED" then
+        self.CCBar:Hide();
+        self.CCBar:SetScript("OnUpdate", nil);
+    elseif eventType == "SPELL_AURA_APPLIED" or eventType == "SPELL_AURA_REFRESH" then -- check for new cc's
+        self:FindLongestCCAndUpdateStatusBar();
     end
-    if not self.healerUnitID then
-        return;
-    end
-    if destGUID ~= UnitGUID(self.healerUnitID) or not self.CCsToLookFor[spellID] then
-        return;
-    end
-
-    self.CCBar:Hide();
-    self.CCBar:SetScript("OnUpdate", nil);
 end
 
 function CCHelper:CreateCCBar()
     self.CCBar = CreateFrame("StatusBar", nil, UIParent);
-    self.CCBar:SetSize(200, 20);
-    self.CCBar:SetPoint("CENTER", UIParent, "CENTER", 0, -200);
+    self.CCBar:SetSize(self.db.profile.ccBarWidth, self.db.profile.ccBarHeight);
+    self.CCBar:SetPoint(self.db.profile.ccBarPosition.point or "CENTER", UIParent, self.db.profile.ccBarPosition.relativePoint or "CENTER", self.db.profile.ccBarPosition.x or 0, self.db.profile.ccBarPosition.y or -300);
     self.CCBar:SetMinMaxValues(0, 1);
     self.CCBar:SetValue(1);
     self.CCBar:SetStatusBarTexture("Interface\\TARGETINGFRAME\\UI-StatusBar");
@@ -56,30 +57,33 @@ function CCHelper:CreateCCBar()
     self.CCBar.icon = self.CCBar:CreateTexture(nil, "OVERLAY");
     self.CCBar.icon:SetSize(20, 20);
     self.CCBar.icon:SetPoint("RIGHT", self.CCBar, "LEFT", -5, 0);
-    
+    self.CCBar.icon:SetTexture(136071);
+
+    self.CCBar.testText = self.CCBar:CreateFontString(nil, "OVERLAY");
+    self.CCBar.testText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE");
+    self.CCBar.testText:SetText("Drag To Move");
+    self.CCBar.testText:SetPoint("CENTER", self.CCBar, "CENTER");
+    self.CCBar.testText:Hide();
+
+    self.CCBar.duration = self.CCBar:CreateFontString(nil, "OVERLAY");
+    self.CCBar.duration:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE");
+    self.CCBar.duration:SetPoint("LEFT", self.CCBar, "LEFT", 5, 0);
+
+    self:UpdateIconVisibility();
+    self:UpdateDurationVisibility();
+
     self.CCBar:Hide();
 end
+function CCHelper:FindLongestCCAndUpdateStatusBar()
+    local _, class = UnitClass("player");
 
-
-function CCHelper:HandleUnitAura(event, unit)
-    local _, instanceType = IsInInstance();
-    if not self.healerUnitID or not UnitIsUnit(unit, self.healerUnitID) then return end
-    if instanceType ~= "arena" then return end
-    self:FindLongestCCAndUpdateStatusBar(unit);
-end
-
-function CCHelper:FindLongestCCAndUpdateStatusBar(unit)
+    if not CastedCCForClass[class] then return end
     local longestDuration = 0;
     local longestExpirationTime = 0;
     local longestDurationSpellID;
     local longestIconTexture;
 
-    --[[ 
-        -- debugging
-        unit = "target";
-    ]]--
-    
-    AuraUtil.ForEachAura(unit, "HARMFUL", nil, function(name, icon, count, debuffType, duration, expirationTime, caster, canStealOrPurge, nameplateShowPersonal, spellID)
+    AuraUtil.ForEachAura(self.healerUnitID, "HARMFUL", nil, function(name, icon, count, debuffType, duration, expirationTime, caster, canStealOrPurge, nameplateShowPersonal, spellID)
         if self.CCsToLookFor[spellID] then
             local remainingTime = expirationTime - GetTime();
             if duration > longestDuration then
@@ -92,16 +96,19 @@ function CCHelper:FindLongestCCAndUpdateStatusBar(unit)
         return true;
     end);
     if longestDuration > 0 then
-        local gracePeriod = 0.15;
+        local gracePeriod = self.db.profile.gracePeriod;
         local progressBarDuration = longestDuration - gracePeriod;
         local remainingTime = longestExpirationTime - GetTime();
-        local castTime = C_Spell.GetSpellInfo(longestDurationSpellID).castTime / 1000;
+        local castTime = C_Spell.GetSpellInfo(CastedCCForClass[class]).castTime / 1000;
 
         self.CCBar:SetMinMaxValues(0, progressBarDuration - castTime);
         self.CCBar:SetValue(progressBarDuration);
         self.CCBar:Show();
 
         self.CCBar.icon:SetTexture(longestIconTexture);
+
+        self:UpdateIconVisibility();
+        self:UpdateDurationVisibility();
 
         self.CCBar:SetScript("OnUpdate", function(_, elapsed)
             remainingTime = longestExpirationTime - GetTime();
