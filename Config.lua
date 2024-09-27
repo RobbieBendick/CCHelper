@@ -86,7 +86,7 @@ function CCHelper:CreateMenu()
                         order = 5,
                         type = "range",
                         name = "Grace Period",
-                        desc = "End the status bar x seconds earlier to give yourself some room.",
+                        desc = "End the status bar x seconds earlier to give yourself some room. (Doesn't apply for Cyclone, so your CC doesn't get immuned.)",
                         min = 0,
                         max = 1,
                         step = 0.01,

@@ -114,9 +114,19 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
         self:UpdateDurationVisibility();
 
         self.CCBar:SetScript("OnUpdate", function(_, elapsed)
-            remainingTime = longestExpirationTime - GetTime();
-            local adjustedValue = remainingTime - castTime - gracePeriod;
+            -- adjust for haste each iteration.
+            castTime = C_Spell.GetSpellInfo(CastedCCForClass[class]).castTime / 1000;
 
+            remainingTime = longestExpirationTime - GetTime();
+
+            local adjustedValue = remainingTime - castTime - gracePeriod;
+            local cycloneSpellID = 33786;
+
+            -- if the CC is cylcone, we don't want a gracePeriod cuz it'll be immuned.
+            if cycloneSpellID == longestDurationSpellID then
+                adjustedValue = remainingTime - castTime;
+            end
+            
             if adjustedValue > 0 then
                 adjustedValue = math.max(0, adjustedValue);
                 self.CCBar:SetValue(adjustedValue);
