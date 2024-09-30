@@ -33,7 +33,6 @@ function CCHelper:SetEnemyArenaHealerID()
     end
 end
 
-
 function CCHelper:CreateCCBar()
     self.CCBar = CreateFrame("StatusBar", nil, UIParent);
     self.CCBar:SetSize(self.db.profile.ccBarWidth, self.db.profile.ccBarHeight);
@@ -68,11 +67,10 @@ function CCHelper:CreateCCBar()
     self.CCBar:Hide();
 end
 
-
 function CCHelper:HandleCombatLog()
-    local _, eventType, _, _, _, _, _, destGUID, _, _, _, spellID = CombatLogGetCurrentEventInfo()
+    local _, eventType, _, _, _, _, _, destGUID, _, _, _, spellID = CombatLogGetCurrentEventInfo();
     if not self.healerUnitID then return end
-    if destGUID ~= UnitGUID(self.healerUnitID) or not self.CCsToLookFor[spellID] then return end
+    if destGUID ~= UnitGUID(self.healerUnitID) or not self.drList[spellID] then return end
 
     local _, class = UnitClass("player")
     if not CastedCCForClass[class] then return end
@@ -92,7 +90,7 @@ function CCHelper:HandleCombatLog()
             local severity = self:GetDRSeverity(drCategory);
             self.CCBar:SetStatusBarColor(unpack(severityColor[severity]));
         end
-        
+
         self:FindLongestCCAndUpdateStatusBar();
     end
 end
@@ -110,7 +108,7 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
     for i=1, 40 do
         local aura = C_UnitAuras.GetAuraDataByIndex(self.healerUnitID, i, "HARMFUL");
         if not aura then break end
-        if self.CCsToLookFor[aura.spellId] then
+        if self.drList[aura.spellId] then
             local remainingTime = aura.expirationTime - GetTime();
             if aura.duration > longestDuration then
                 longestDuration = aura.duration;
