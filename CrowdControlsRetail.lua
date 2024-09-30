@@ -16,6 +16,7 @@ CCHelper.CCsToLookFor = {
     -- hunter
     [187650] = true, -- freezing trap
     [19577]  = true, -- intimidation
+    [109248] = true, -- binding shot
 
     -- paladin
     [853]    = true, -- hammer of justice
@@ -45,11 +46,13 @@ CCHelper.CCsToLookFor = {
 
     -- death knight
     [108194] = true, -- asphyxiate
+    [207167] = true, -- blinding sheet
 
     -- druid
     [33786]  = true, -- cyclone
     [5211]   = true, -- mighty bash
     [22570]  = true, -- maim
+    [163505] = true, -- rake stun
 
     -- dragon
     [360806] = true, -- sleep walk

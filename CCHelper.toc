@@ -8,5 +8,6 @@
 embeds.xml
 
 Config.lua
+DiminishingReturns.lua
 CrowdControlsRetail.lua
 CCHelper.lua

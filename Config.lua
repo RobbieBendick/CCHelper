@@ -4,6 +4,12 @@ local AceConfig = LibStub("AceConfig-3.0");
 local AceConfigDialog = LibStub("AceConfigDialog-3.0");
 local CCHelperConfig;
 
+local severityColor = {
+    [1] = { 0, 1, 0, 1},
+    [2] = { 1, 1, 0, 1},
+    [3] = { 1, 0, 0, 1},
+}
+
 function CCHelper:CreateMenu()
     CCHelperConfig = CreateFrame("Frame", "CCHelperConfig", UIParent);
     CCHelperConfig.name = "CCHelper";
@@ -126,8 +132,20 @@ function CCHelper:CreateMenu()
                         end,
                         width = 0.75,
                     },
-                    testModeButton = {
+                    drColors = {
                         order = 9,
+                        type = "toggle",
+                        name = "Show DR colors",
+                        desc = "Set the bar's color to reflect the healer's DR status for your casted CC.",
+                        get = function() return self.db.profile.drColors end,
+                        set = function(_, value)
+                            self.db.profile.drColors = value;
+                            self:UpdateDRColors();
+                        end,
+                        width = 0.75,
+                    },
+                    testModeButton = {
+                        order = 10,
                         type = "execute",
                         name = "Toggle Test Mode",
                         desc = "Click to toggle test mode on and off. You can drag to move the bar in test mode.",
@@ -167,7 +185,6 @@ function CCHelper:ToggleTestMode()
     end
 end
 
-
 function CCHelper:UpdateIconVisibility()
     if self.db.profile.showIcon then
         self.CCBar.icon:Show();
@@ -181,6 +198,15 @@ function CCHelper:UpdateDurationVisibility()
         self.CCBar.duration:Show();
     else
         self.CCBar.duration:Hide();
+    end
+end
+
+function CCHelper:UpdateDRColors()
+    if self.db.profile.drColors then
+        local severity = self:GetDRSeverity(drCategory);
+        self.CCBar:SetStatusBarColor(unpack(severityColor[severity]));
+    else
+        self.CCBar:SetStatusBarColor(0, 0.75, 1);
     end
 end
 
@@ -250,6 +276,7 @@ local defaults = {
         showIcon = true,
         gracePeriod = 0.15,
         showDuration = false,
+        drColors = true,
     }
 };
 
@@ -284,7 +311,6 @@ function CCHelper:OnInitialize()
     self:CreateCCBar();
     self:ToggleTestMode();
 
-    -- self:RegisterEvent("UNIT_AURA", "HandleUnitAura");
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "HandleCombatLog");
     self:RegisterEvent("ARENA_PREP_OPPONENT_SPECIALIZATIONS", "SetEnemyArenaHealerID");
     self:RegisterEvent("ARENA_OPPONENT_UPDATE", "SetEnemyArenaHealerID");

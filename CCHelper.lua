@@ -10,11 +10,17 @@ local HealerSpecs = {
     [1468] = true,  -- preservation evoker  
 }
 local CastedCCForClass = {
-    ["MAGE"] = 118, -- polymorph
-    ["EVOKER"] = 360806, -- sleep walk
-    ["DRUID"] = 33786, -- cyclone
-    ["WARLOCK"] = 5782, -- fear
-    ["SHAMAN"] = 11641, -- hex
+    ["MAGE"] = {spellID = 118, dr = "Incapacitate"}, -- polymorph
+    ["EVOKER"] = {spellID = 360806, dr = "Disorient"}, -- sleep walk
+    ["DRUID"] = {spellID = 33786, dr = "Disorient"}, -- cyclone
+    ["WARLOCK"] = {spellID = 5782, dr = "Disorient"}, -- fear
+    ["SHAMAN"] = {spellID = 11641, dr = "Incapacitate"}, -- hex
+}
+
+local severityColor = {
+    [1] = { 0, 1, 0, 1},
+    [2] = { 1, 1, 0, 1},
+    [3] = { 1, 0, 0, 1},
 }
 
 function CCHelper:SetEnemyArenaHealerID()
@@ -27,19 +33,6 @@ function CCHelper:SetEnemyArenaHealerID()
     end
 end
 
-function CCHelper:HandleCombatLog()
-    local _, eventType, _, _, _, _, _, destGUID, _, _, _, spellID = CombatLogGetCurrentEventInfo();
-    if not self.healerUnitID then return end
-    if destGUID ~= UnitGUID(self.healerUnitID) or not self.CCsToLookFor[spellID] then return end
-
-    -- track cc breaks including dispels & PvP trinket use
-    if eventType == "SPELL_AURA_BROKEN" or eventType == "SPELL_AURA_BROKEN_SPELL" or eventType == "SPELL_DISPEL" or eventType == "SPELL_AURA_REMOVED" then
-        self.CCBar:Hide();
-        self.CCBar:SetScript("OnUpdate", nil);
-    elseif eventType == "SPELL_AURA_APPLIED" or eventType == "SPELL_AURA_REFRESH" then -- check for new cc's
-        self:FindLongestCCAndUpdateStatusBar();
-    end
-end
 
 function CCHelper:CreateCCBar()
     self.CCBar = CreateFrame("StatusBar", nil, UIParent);
@@ -75,6 +68,36 @@ function CCHelper:CreateCCBar()
     self.CCBar:Hide();
 end
 
+
+function CCHelper:HandleCombatLog()
+    local _, eventType, _, _, _, _, _, destGUID, _, _, _, spellID = CombatLogGetCurrentEventInfo()
+    if not self.healerUnitID then return end
+    if destGUID ~= UnitGUID(self.healerUnitID) or not self.CCsToLookFor[spellID] then return end
+
+    local _, class = UnitClass("player")
+    if not CastedCCForClass[class] then return end
+
+    local drCategory = CastedCCForClass[class].dr;
+
+    if eventType == "SPELL_AURA_BROKEN" or eventType == "SPELL_AURA_BROKEN_SPELL" or eventType == "SPELL_DISPEL" or eventType == "SPELL_AURA_REMOVED" then
+        self.CCBar:Hide();
+        self.CCBar:SetScript("OnUpdate", nil);
+
+        if self.drList[spellID] == drCategory then
+            self:ResetDRTimer(drCategory);
+        end
+    elseif eventType == "SPELL_AURA_APPLIED" or eventType == "SPELL_AURA_REFRESH" then
+        if self.db.profile.drColors and self.drList[spellID] == drCategory then
+            self:ApplyDR(drCategory);
+            local severity = self:GetDRSeverity(drCategory);
+            self.CCBar:SetStatusBarColor(unpack(severityColor[severity]));
+        end
+        
+        self:FindLongestCCAndUpdateStatusBar();
+    end
+end
+
+
 function CCHelper:FindLongestCCAndUpdateStatusBar()
     local _, class = UnitClass("player");
     if not CastedCCForClass[class] then return end
@@ -102,7 +125,7 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
         local gracePeriod = self.db.profile.gracePeriod;
         local progressBarDuration = longestDuration - gracePeriod;
         local remainingTime = longestExpirationTime - GetTime();
-        local castTime = C_Spell.GetSpellInfo(CastedCCForClass[class]).castTime / 1000;
+        local castTime = C_Spell.GetSpellInfo(CastedCCForClass[class].spellID).castTime / 1000;
 
         self.CCBar:SetMinMaxValues(0, progressBarDuration - castTime);
         self.CCBar:SetValue(progressBarDuration);
@@ -114,8 +137,10 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
         self:UpdateDurationVisibility();
 
         self.CCBar:SetScript("OnUpdate", function(_, elapsed)
+            local drCategory = CastedCCForClass[class].dr;
+
             -- adjust for haste each iteration.
-            castTime = C_Spell.GetSpellInfo(CastedCCForClass[class]).castTime / 1000;
+            castTime = C_Spell.GetSpellInfo(CastedCCForClass[class].spellID).castTime / 1000;
 
             remainingTime = longestExpirationTime - GetTime();
 
@@ -131,6 +156,12 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
                 adjustedValue = math.max(0, adjustedValue);
                 self.CCBar:SetValue(adjustedValue);
                 self.CCBar.duration:SetFormattedText("%.1f", adjustedValue);
+
+                if self.db.profile.drColors then
+                    local severity = self:GetDRSeverity(drCategory);
+                    self.CCBar:SetStatusBarColor(unpack(severityColor[severity]));
+                end
+                
             else
                 self.CCBar:Hide();
                 self.CCBar:SetScript("OnUpdate", nil);
