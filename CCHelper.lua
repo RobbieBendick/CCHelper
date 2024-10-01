@@ -1,24 +1,5 @@
 local CCHelper = LibStub("AceAddon-3.0"):GetAddon("CCHelper");
 local GetSpellInfo = C_Spell.GetSpellInfo;
-local HealerSpecs = {
-    [105]  = true,  -- druid resto
-    [270]  = true,  -- monk mw
-    [65]   = true,  -- paladin holy
-    [256]  = true,  -- priest disc
-    [257]  = true,  -- priest holy
-    [264]  = true,  -- shaman resto
-    [1468] = true,  -- preservation evoker  
-}
-
-function CCHelper:SetEnemyArenaHealerID()
-    for i=1, 3 do
-        local specID = GetArenaOpponentSpec(i);
-        if specID and specID > 0 and HealerSpecs[specID] then
-            self.healerUnitID = "arena"..i;
-            break;
-        end
-    end
-end
 
 function CCHelper:CreateCCBar()
     self.CCBar = CreateFrame("StatusBar", nil, UIParent);
@@ -159,5 +140,25 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
     else
         self.CCBar:Hide();
         self.CCBar:SetScript("OnUpdate", nil);
+    end
+end
+
+function CCHelper:SetEnemyArenaHealerID()
+    local HealerSpecs = {
+        [105]  = true,  -- druid resto
+        [270]  = true,  -- monk mw
+        [65]   = true,  -- paladin holy
+        [256]  = true,  -- priest disc
+        [257]  = true,  -- priest holy
+        [264]  = true,  -- shaman resto
+        [1468] = true,  -- preservation evoker  
+    };
+
+    for i=1, 3 do
+        local specID = GetArenaOpponentSpec(i);
+        if specID and specID > 0 and HealerSpecs[specID] then
+            self.healerUnitID = "arena"..i;
+            break;
+        end
     end
 end
