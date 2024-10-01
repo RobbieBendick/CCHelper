@@ -13,12 +13,11 @@ CCHelper.castedCCForClass = {
 }
 
 CCHelper.lightBlue = {0, 0.75, 1};
-
 CCHelper.severityColor = {
-    [0] = CCHelper.lightBlue,  -- Blue for no DR
-    [1] = {0, 1, 0},  -- Green for mild DR
-    [2] = {1, 1, 0},  -- Yellow for moderate DR
-    [3] = {1, 0, 0},  -- Red for full DR
+    [0] = CCHelper.lightBlue,  -- light blue for no DR
+    [1] = {0, 1, 0},           -- green for mild DR
+    [2] = {1, 1, 0},           -- yellow for moderate DR
+    [3] = {1, 0, 0},           -- red for full DR
 }
 
 function CCHelper:CreateMenu()
@@ -37,10 +36,10 @@ function CCHelper:CreateMenu()
                 type = "description",
                 name = "|cffffd700Version|r " .. version .. "\n|cffffd700 Author|r " .. author,
             },
-            position = {
+            CCBar = {
                 order = 2,
                 type = "group",
-                name = "CC Bar Position",
+                name = "CC Bar Settings",
                 inline = true,
                 args = {
                     xPos = {
@@ -221,7 +220,7 @@ function CCHelper:UpdateDRColors()
             self.CCBar:SetStatusBarColor(unpack(self.severityColor[severity]));
         end
     else
-        self.CCBar:SetStatusBarColor(0, 0.75, 1);
+        self.CCBar:SetStatusBarColor(unpack(self.lightBlue));
     end
 end
 
@@ -325,6 +324,12 @@ function CCHelper:HandleSlashCommand(input)
     end
 end
 
+function CCHelper:Reload(input)
+    if input == "" then
+        ReloadUI();
+    end
+end
+
 function CCHelper:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("CCHelperDB", defaults, true);
 
@@ -339,4 +344,5 @@ function CCHelper:OnInitialize()
     self:RegisterEvent("ARENA_OPPONENT_UPDATE", "SetEnemyArenaHealerID");
 
     self:RegisterChatCommand("cc", "HandleSlashCommand");
+    self:RegisterChatCommand("rl", "Reload");
 end

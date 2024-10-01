@@ -37,6 +37,7 @@ end
 
 function CCHelper:HandleCombatLog()
     local _, eventType, _, _, _, _, _, destGUID, _, _, _, spellID = CombatLogGetCurrentEventInfo();
+    -- self.healerUnitID = 'target'; -- for debugging
     if not self.healerUnitID then return end
     if destGUID ~= UnitGUID(self.healerUnitID) or not self.drList[spellID] then return end
 
@@ -67,7 +68,6 @@ function CCHelper:HandleCombatLog()
     end
 end
 
-
 function CCHelper:FindLongestCCAndUpdateStatusBar()
     local _, class = UnitClass("player");
     if not self.castedCCForClass[class] then return end
@@ -81,7 +81,6 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
         local aura = C_UnitAuras.GetAuraDataByIndex(self.healerUnitID, i, "HARMFUL");
         if not aura then break end
         if self.drList[aura.spellId] then
-            local remainingTime = aura.expirationTime - GetTime();
             if aura.duration > longestDuration then
                 longestDuration = aura.duration;
                 longestExpirationTime = aura.expirationTime;
@@ -108,16 +107,15 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
 
         self.CCBar:SetScript("OnUpdate", function(_, elapsed)
             local drCategory = self.castedCCForClass[class].dr;
+            local cycloneSpellID = 33786;
 
-            -- adjust for haste each iteration.
+            -- need to always be checking cast time cuz haste procs
             castTime = C_Spell.GetSpellInfo(self.castedCCForClass[class].spellID).castTime / 1000;
 
             remainingTime = longestExpirationTime - GetTime();
-
             local adjustedValue = remainingTime - castTime - gracePeriod;
-            local cycloneSpellID = 33786;
 
-            -- if the CC is cylcone, we don't want a gracePeriod cuz it'll be immuned.
+            -- if the CC is cylcone, we don't want a grace period cuz it'll be immuned.
             if cycloneSpellID == longestDurationSpellID then
                 adjustedValue = remainingTime - castTime;
             end
@@ -144,7 +142,7 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
 end
 
 function CCHelper:SetEnemyArenaHealerID()
-    local HealerSpecs = {
+    local healerSpecs = {
         [105]  = true,  -- druid resto
         [270]  = true,  -- monk mw
         [65]   = true,  -- paladin holy
@@ -156,7 +154,7 @@ function CCHelper:SetEnemyArenaHealerID()
 
     for i=1, 3 do
         local specID = GetArenaOpponentSpec(i);
-        if specID and specID > 0 and HealerSpecs[specID] then
+        if specID and specID > 0 and healerSpecs[specID] then
             self.healerUnitID = "arena"..i;
             break;
         end
