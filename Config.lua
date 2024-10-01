@@ -4,10 +4,21 @@ local AceConfig = LibStub("AceConfig-3.0");
 local AceConfigDialog = LibStub("AceConfigDialog-3.0");
 local CCHelperConfig;
 
-local severityColor = {
-    [1] = { 0, 1, 0, 1},
-    [2] = { 1, 1, 0, 1},
-    [3] = { 1, 0, 0, 1},
+CCHelper.castedCCForClass = {
+    ["MAGE"] = {spellID = 118, dr = "Incapacitate"}, -- polymorph
+    ["EVOKER"] = {spellID = 360806, dr = "Disorient"}, -- sleep walk
+    ["DRUID"] = {spellID = 33786, dr = "Disorient"}, -- cyclone
+    ["WARLOCK"] = {spellID = 5782, dr = "Disorient"}, -- fear
+    ["SHAMAN"] = {spellID = 11641, dr = "Incapacitate"}, -- hex
+}
+
+CCHelper.lightBlue = {0, 0.75, 1};
+
+CCHelper.severityColor = {
+    [0] = CCHelper.lightBlue,  -- Blue for no DR
+    [1] = {0, 1, 0},  -- Green for mild DR
+    [2] = {1, 1, 0},  -- Yellow for moderate DR
+    [3] = {1, 0, 0},  -- Red for full DR
 }
 
 function CCHelper:CreateMenu()
@@ -203,8 +214,12 @@ end
 
 function CCHelper:UpdateDRColors()
     if self.db.profile.drColors then
-        local severity = self:GetDRSeverity(drCategory);
-        self.CCBar:SetStatusBarColor(unpack(severityColor[severity]));
+        local _, class = UnitClass("player");
+        local drCategory = self.castedCCForClass[class].dr;
+        if drCategory then
+            local severity = self:GetDRSeverity(drCategory);
+            self.CCBar:SetStatusBarColor(unpack(self.severityColor[severity]));
+        end
     else
         self.CCBar:SetStatusBarColor(0, 0.75, 1);
     end
@@ -265,7 +280,6 @@ function CCHelper:DisableDragging()
     self.CCBar:SetScript("OnDragStop", nil);
 end
 
-
 local defaults = {
     profile = {
         ccBarPosition = { x = 0, y = -300 },
@@ -280,17 +294,26 @@ local defaults = {
     }
 };
 
+function CCHelper:ResetSettings()
+    self.db.profile.ccBarPosition = defaults.profile.ccBarPosition;
+    self.db.profile.ccBarWidth = defaults.profile.ccBarWidth;
+    self.db.profile.ccBarHeight = defaults.profile.ccBarHeight;
+    self.db.profile.showIcon = defaults.profile.showIcon;
+    self.db.profile.showDuration = defaults.profile.showDuration;
+    self.db.profile.gracePeriod = defaults.profile.gracePeriod;
+    self.db.profile.drColors = defaults.profile.drColors;
+end
+
 function CCHelper:HandleSlashCommand(input)
     if input == "test" then
         self.db.profile.testMode = not self.db.profile.testMode;
         self:ToggleTestMode();
         self:Print("Test Mode " .. (self.db.profile.testMode and "enabled" or "disabled"));
     elseif input == "reset" then
-        self.db.profile.ccBarPosition = defaults.profile.ccBarPosition;
-        self.db.profile.ccBarWidth = defaults.profile.ccBarWidth;
-        self.db.profile.ccBarHeight = defaults.profile.ccBarHeight;
+        self:ResetSettings();
         self:UpdateCCBarPosition();
         self:UpdateCCBarSize();
+
         print("CCHelper: Settings reset to default");
     elseif input == "" then
         Settings.OpenToCategory("CCHelper");

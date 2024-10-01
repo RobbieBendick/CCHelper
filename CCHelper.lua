@@ -9,19 +9,6 @@ local HealerSpecs = {
     [264]  = true,  -- shaman resto
     [1468] = true,  -- preservation evoker  
 }
-local CastedCCForClass = {
-    ["MAGE"] = {spellID = 118, dr = "Incapacitate"}, -- polymorph
-    ["EVOKER"] = {spellID = 360806, dr = "Disorient"}, -- sleep walk
-    ["DRUID"] = {spellID = 33786, dr = "Disorient"}, -- cyclone
-    ["WARLOCK"] = {spellID = 5782, dr = "Disorient"}, -- fear
-    ["SHAMAN"] = {spellID = 11641, dr = "Incapacitate"}, -- hex
-}
-
-local severityColor = {
-    [1] = { 0, 1, 0, 1},
-    [2] = { 1, 1, 0, 1},
-    [3] = { 1, 0, 0, 1},
-}
 
 function CCHelper:SetEnemyArenaHealerID()
     for i=1, 3 do
@@ -40,7 +27,7 @@ function CCHelper:CreateCCBar()
     self.CCBar:SetMinMaxValues(0, 1);
     self.CCBar:SetValue(1);
     self.CCBar:SetStatusBarTexture("Interface\\TARGETINGFRAME\\UI-StatusBar");
-    self.CCBar:SetStatusBarColor(0, 0.75, 1);
+    self.CCBar:SetStatusBarColor(unpack(self.lightBlue));
 
     self.CCBar.bg = self.CCBar:CreateTexture(nil, "BACKGROUND");
     self.CCBar.bg:SetAllPoints(true);
@@ -73,9 +60,9 @@ function CCHelper:HandleCombatLog()
     if destGUID ~= UnitGUID(self.healerUnitID) or not self.drList[spellID] then return end
 
     local _, class = UnitClass("player")
-    if not CastedCCForClass[class] then return end
+    if not self.castedCCForClass[class] then return end
 
-    local drCategory = CastedCCForClass[class].dr;
+    local drCategory = self.castedCCForClass[class].dr;
 
     if eventType == "SPELL_AURA_BROKEN" or eventType == "SPELL_AURA_BROKEN_SPELL" or eventType == "SPELL_DISPEL" or eventType == "SPELL_AURA_REMOVED" then
         self.CCBar:Hide();
@@ -88,7 +75,11 @@ function CCHelper:HandleCombatLog()
         if self.db.profile.drColors and self.drList[spellID] == drCategory then
             self:ApplyDR(drCategory);
             local severity = self:GetDRSeverity(drCategory);
-            self.CCBar:SetStatusBarColor(unpack(severityColor[severity]));
+            if severity == 0 then
+                self.CCBar:SetStatusBarColor(unpack(self.lightBlue));
+            else
+                self.CCBar:SetStatusBarColor(unpack(self.severityColor[severity]));
+            end
         end
 
         self:FindLongestCCAndUpdateStatusBar();
@@ -98,7 +89,7 @@ end
 
 function CCHelper:FindLongestCCAndUpdateStatusBar()
     local _, class = UnitClass("player");
-    if not CastedCCForClass[class] then return end
+    if not self.castedCCForClass[class] then return end
 
     local longestDuration = 0;
     local longestExpirationTime = 0;
@@ -123,7 +114,7 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
         local gracePeriod = self.db.profile.gracePeriod;
         local progressBarDuration = longestDuration - gracePeriod;
         local remainingTime = longestExpirationTime - GetTime();
-        local castTime = C_Spell.GetSpellInfo(CastedCCForClass[class].spellID).castTime / 1000;
+        local castTime = C_Spell.GetSpellInfo(self.castedCCForClass[class].spellID).castTime / 1000;
 
         self.CCBar:SetMinMaxValues(0, progressBarDuration - castTime);
         self.CCBar:SetValue(progressBarDuration);
@@ -135,10 +126,10 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
         self:UpdateDurationVisibility();
 
         self.CCBar:SetScript("OnUpdate", function(_, elapsed)
-            local drCategory = CastedCCForClass[class].dr;
+            local drCategory = self.castedCCForClass[class].dr;
 
             -- adjust for haste each iteration.
-            castTime = C_Spell.GetSpellInfo(CastedCCForClass[class].spellID).castTime / 1000;
+            castTime = C_Spell.GetSpellInfo(self.castedCCForClass[class].spellID).castTime / 1000;
 
             remainingTime = longestExpirationTime - GetTime();
 
@@ -157,7 +148,7 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
 
                 if self.db.profile.drColors then
                     local severity = self:GetDRSeverity(drCategory);
-                    self.CCBar:SetStatusBarColor(unpack(severityColor[severity]));
+                    self.CCBar:SetStatusBarColor(unpack(self.severityColor[severity]));
                 end
                 
             else

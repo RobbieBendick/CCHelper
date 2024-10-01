@@ -11,12 +11,6 @@ CCHelper.drCategories = {
 };
 local drCategories = CCHelper.drCategories;
 local drTime = 18.5;
-local severityColor = {
-    [1] = { 0, 1, 0, 1},
-    [2] = { 1, 1, 0, 1},
-    [3] = { 1, 0, 0, 1},
-};
-
 local GetTime = GetTime;
 
 function CCHelper:ApplyDR(drCategory)
@@ -39,7 +33,7 @@ function CCHelper:ApplyDR(drCategory)
             currentDR.expires = GetTime() + drTime;
         else
             currentDR.expires = GetTime() + drTime;
-            currentDR.severity = math.min(currentDR.severity + 1, 3);
+            currentDR.severity = math.min(currentDR.severity + 1, 4);
         end
     end
 end
@@ -54,7 +48,7 @@ function CCHelper:GetDRSeverity(drCategory)
             self.DRTimers[self.healerUnitID][drCategory] = nil;
         end
     end
-    return 1;
+    return 0;
 end
 
 function CCHelper:ResetDRTimer(drCategory)
@@ -190,42 +184,4 @@ CCHelper.drList = {
     [287712]  = "Stun",            -- Haymaker (Kul Tiran)
     [372245]  = "Stun",            -- Terror of the Skies
 	[389831]  = "Stun",            -- Snowdrift
-
-    [204085]  = "Root",            -- Deathchill (Chains of Ice)
-    [233395]  = "Root",            -- Deathchill (Remorseless Winter)
-    [339]     = "Root",            -- Entangling Roots
-    [170855]  = "Root",            -- Entangling Roots (Nature's Grasp)
---  [45334]   = "Root",            -- Immobilized (Wild Charge) FIXME: only DRs with itself
-    [102359]  = "Root",            -- Mass Entanglement
-    [162480]  = "Root",            -- Steel Trap
---  [190927]  = "Root",            -- Harpoon FIXME: only DRs with itself
-    [212638]  = "Root",            -- Tracker's Net
-    [201158]  = "Root",            -- Super Sticky Tar
-    [122]     = "Root",            -- Frost Nova
-    [33395]   = "Root",            -- Freeze
-    [378760]  = "Root",            -- Frostbite
-    [220107]  = "Root",            -- Frostbite (Water Elemental? needs testing)
-    [233582]  = "Root",            -- Entrenched in Flame
-    [116706]  = "Root",            -- Disable
-	[324382]  = "Root",            -- Clash
-    [64695]   = "Root",            -- Earthgrab (Totem effect)
-	[285515]  = "Root",            -- Surge of Power (Frost Shock Root)
-    [241887]  = "Root",            -- Landslide
-
-    [207777]  = "Disarm",          -- Dismantle
-    [233759]  = "Disarm",          -- Grapple Weapon
-    [236077]  = "Disarm",          -- Disarm
-    [236236]  = "Disarm",          -- Disarm (Prot)
-    [209749]  = "Disarm",          -- Faerie Swarm (Balance)
-    [407032]  = "Disarm",          -- Sticky Tar Bomb
-    [407031]  = "Disarm",          -- Sticky Tar Bomb
-    
-	[51490]  = "Knock",          -- Thunderstorm
---	[102793]  = "Knock",          -- Vortex
-	[116844]  = "Knock",          -- Ring of Peace
-	[132469]  = "Knock",          -- Typhoon
-	[61391]  = "Knock",          -- Typhoon
-	[357214]  = "Knock",          -- Evoker Racial
-	[236776]  = "Knock",          -- High explosive trap
-	[127797]  = "Knock",          -- Vortex
 }
