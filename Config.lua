@@ -102,7 +102,7 @@ function CCHelper:CreateMenu()
                         order = 5,
                         type = "range",
                         name = "Grace Period",
-                        desc = "End the status bar x seconds earlier to give yourself some room. (Doesn't apply for Cyclone, so your CC doesn't get immuned.)",
+                        desc = "End the status bar x seconds earlier to give yourself some room.\n\nDoesn't apply for Cyclone, so your CC doesn't get immuned.",
                         min = 0,
                         max = 1,
                         step = 0.01,
@@ -146,7 +146,7 @@ function CCHelper:CreateMenu()
                         order = 9,
                         type = "toggle",
                         name = "Show DR colors",
-                        desc = "Set the bar's color to reflect the healer's DR status for your casted CC.",
+                        desc = "Set the bar's color to reflect the healer's DR status for your class's casted CC.",
                         get = function() return self.db.profile.drColors end,
                         set = function(_, value)
                             self.db.profile.drColors = value;
@@ -324,6 +324,12 @@ function CCHelper:HandleSlashCommand(input)
     end
 end
 
+function CCHelper:AnotherHandleSlashCommand(input)
+    if input == "" then
+        Settings.OpenToCategory("CCHelper");
+    end
+end
+
 function CCHelper:Reload(input)
     if input == "" then
         ReloadUI();
@@ -344,5 +350,7 @@ function CCHelper:OnInitialize()
     self:RegisterEvent("ARENA_OPPONENT_UPDATE", "SetEnemyArenaHealerID");
 
     self:RegisterChatCommand("cc", "HandleSlashCommand");
+    self:RegisterChatCommand("cchelp", "AnotherHandleSlashCommand");
+    self:RegisterChatCommand("cchelper", "AnotherHandleSlashCommand");
     self:RegisterChatCommand("rl", "Reload");
 end
