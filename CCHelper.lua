@@ -37,8 +37,12 @@ end
 
 function CCHelper:HandleCombatLog()
     local _, eventType, _, _, _, _, _, destGUID, _, _, _, spellID = CombatLogGetCurrentEventInfo();
+    local inInstance, instanceType = IsInInstance();
+
+    if instanceType ~= "arena" then return end
     -- self.healerUnitID = 'target'; -- for debugging
     if not self.healerUnitID then return end
+    
     if destGUID ~= UnitGUID(self.healerUnitID) or not self.drList[spellID] then return end
 
     local _, class = UnitClass("player")
