@@ -1,0 +1,12 @@
+## Interface: 110002
+## Author: Mageiden
+## Title: CCHelper
+## Notes: Helps with timing casted CC's off of other CC's on healers in arena.
+## DefaultState: enabled
+## Version: v0.0.2
+## SavedVariables: CCHelperDB
+embeds.xml
+
+Config.lua
+DiminishingReturns.lua
+CCHelper.lua

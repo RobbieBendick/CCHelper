@@ -337,6 +337,9 @@ function CCHelper:Reload(input)
 end
 
 function CCHelper:OnInitialize()
+    local TEMP_WOW_CATA_CLASSIC_ID = 14;
+    local isCata = WOW_PROJECT_ID == TEMP_WOW_CATA_CLASSIC_ID; 
+
     self.db = LibStub("AceDB-3.0"):New("CCHelperDB", defaults, true);
 
     self.healerUnitID = nil;
@@ -346,7 +349,10 @@ function CCHelper:OnInitialize()
     self:ToggleTestMode();
 
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "HandleCombatLog");
-    self:RegisterEvent("ARENA_PREP_OPPONENT_SPECIALIZATIONS", "SetEnemyArenaHealerID");
+
+    if not isCata then
+        self:RegisterEvent("ARENA_PREP_OPPONENT_SPECIALIZATIONS", "SetEnemyArenaHealerID");
+    end
     self:RegisterEvent("ARENA_OPPONENT_UPDATE", "SetEnemyArenaHealerID");
 
     self:RegisterChatCommand("cc", "HandleSlashCommand");
