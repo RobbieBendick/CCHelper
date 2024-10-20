@@ -1,5 +1,12 @@
 local CCHelper = LibStub("AceAddon-3.0"):GetAddon("CCHelper");
-local GetSpellInfo = C_Spell.GetSpellInfo;
+local TEMP_WOW_CATA_CLASSIC_ID = 14;
+local isCata = WOW_PROJECT_ID == TEMP_WOW_CATA_CLASSIC_ID;
+local GetSpellInfo;
+if isCata then
+    GetSpellInfo = _G.GetSpellInfo;
+else
+    GetSpellInfo = C_Spell.GetSpellInfo;
+end
 
 function CCHelper:CreateCCBar()
     self.CCBar = CreateFrame("StatusBar", nil, UIParent);
@@ -41,8 +48,8 @@ function CCHelper:HandleCombatLog()
 
     if instanceType ~= "arena" then return end
     -- self.healerUnitID = 'target'; -- for debugging
-    if not self.healerUnitID then return end
     
+    if not self.healerUnitID then return end
     if destGUID ~= UnitGUID(self.healerUnitID) or not self.drList[spellID] then return end
 
     local _, class = UnitClass("player")
@@ -61,13 +68,8 @@ function CCHelper:HandleCombatLog()
         if self.db.profile.drColors and self.drList[spellID] == drCategory then
             self:ApplyDR(drCategory);
             local severity = self:GetDRSeverity(drCategory);
-            if severity == 0 then
-                self.CCBar:SetStatusBarColor(unpack(self.lightBlue));
-            else
-                self.CCBar:SetStatusBarColor(unpack(self.severityColor[severity]));
-            end
+            self.CCBar:SetStatusBarColor(unpack(self.severityColor[severity]));
         end
-
         self:FindLongestCCAndUpdateStatusBar();
     end
 end
@@ -98,7 +100,15 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
         local gracePeriod = self.db.profile.gracePeriod;
         local progressBarDuration = longestDuration - gracePeriod;
         local remainingTime = longestExpirationTime - GetTime();
-        local castTime = C_Spell.GetSpellInfo(self.castedCCForClass[class].spellID).castTime / 1000;
+        local cast;
+
+        -- cata has a different GetSpellInfo function which returns in a different way
+        if isCata then
+            local name, rank, icon, cataCastTime, minRange, maxRange = GetSpellInfo(self.castedCCForClass[class].spellID);
+            cast = cataCastTime;
+        end
+
+        local castTime = cast and cast / 1000 or GetSpellInfo(self.castedCCForClass[class].spellID).castTime / 1000;
 
         self.CCBar:SetMinMaxValues(0, progressBarDuration - castTime);
         self.CCBar:SetValue(progressBarDuration);
@@ -114,7 +124,7 @@ function CCHelper:FindLongestCCAndUpdateStatusBar()
             local cycloneSpellID = 33786;
 
             -- need to always be checking cast time cuz haste procs
-            castTime = C_Spell.GetSpellInfo(self.castedCCForClass[class].spellID).castTime / 1000;
+            local castTime = cast and cast / 1000 or GetSpellInfo(self.castedCCForClass[class].spellID).castTime / 1000;
 
             remainingTime = longestExpirationTime - GetTime();
             local adjustedValue = remainingTime - castTime - gracePeriod;
@@ -164,3 +174,112 @@ function CCHelper:SetEnemyArenaHealerID()
         end
     end
 end
+
+function CCHelper:CataclysmIdentifyHealer()
+
+    local IsInInstance, instanceType = IsInInstance();
+
+    if instanceType ~= "arena" then return end
+
+    local healerUnitID;
+    
+    for i = 1, 5 do
+        local unitID = "arena"..i;
+        if UnitExists(unitID) then
+            local _, class = UnitClass(unitID);
+            local maxMana = UnitPowerMax(unitID);
+            
+            -- healer capable classes
+            if class == "PRIEST" or class == "PALADIN" or class == "DRUID" or class == "SHAMAN" then
+
+                -- check if its a hpal
+                if class == "PALADIN" and maxMana > 60000 then
+                    self.healerUnitID = unitID;
+                    return;
+                end
+
+                -- further check by buffs
+                local healingSpellDetected = self:TrackHealingSpells(unitID);
+                
+                if healingSpellDetected then
+                    self.healerUnitID = unitID;
+                    return;
+                end
+            end
+        end
+    end
+end
+
+function CCHelper:TrackHealingSpells(unitID)
+    local healingSpells = {
+        [974]    = true,            -- Earth Shield
+        [61295]  = true,            -- Riptide
+        [51886]  = true,            -- Cleanse Spirit
+        [16190]  = true,            -- Mana Tide Totem
+        [53390]  = true,            -- Tidal Waves
+        [31616]  = true,            -- Nature's Guardian
+        [16236]  = true,            -- Ancestral Fortitude (buff)
+        [16188]  = true,            -- Nature's Swiftness
+        [98008]  = true,            -- Soul Link Totem
+        [51564]  = true,            -- Tidal Waves
+        [51562]  = true,            -- Tidal Waves
+        [51563]  = true,            -- Tidal Waves
+        [105284] = true,            -- Ancestral Vigor
+        [51945]  = true,            -- Earthliving
+        [52752]  = true,            -- Ancestral Awakening (SPELL_HEAL)
+        [77613]  = true,            -- Grace
+        [59889]  = true,            -- Borrowed Time
+        [59888]  = true,            -- Borrowed Time
+        [59887]  = true,            -- Borrowed Time
+        [10060]  = true,            -- Power Infusion
+        [33206]  = true,            -- Pain Suppression
+        [45242]  = true,            -- Focused Will
+        [45241]  = true,            -- Focused Will
+        [34861]  = true,            -- Circle of Healing
+        [724]    = true,            -- Lightwell
+        [7001]   = true,            -- Lightwell Heal
+        [33143]  = true,            -- Blessed Resilience
+        [65081]  = true,            -- Body and Soul
+        [64128]  = true,            -- Body and Soul
+        [63735]  = true,            -- Serendipity
+        [63731]  = true,            -- Serendipity
+        [47788]  = true,            -- Guardian Spirit
+        [27827]  = true,            -- Spirit of Redemption
+        [14751]  = true,            -- Chakra
+        [81206]  = true,            -- Chakra: Sanctuary
+        [81209]  = true,            -- Chakra: Chastise
+        [81208]  = true,            -- Chakra: Serenity
+        [89912]  = true,            -- Chakra: Flow
+        [88625]  = true,            -- Chastise (cast)
+        [53563]  = true,            -- Beacon of Light
+        [31842]  = true,            -- Divine Favor
+        [54149]  = true,            -- Infusion of Light
+        [85222]  = true,            -- Light of Dawn
+        [31821]  = true,            -- Aura Mastery
+        [85497]  = true,            -- Speed of Light
+        [88819]  = true,            -- Daybreak
+    };
+    
+    for i = 1, 40 do
+        local aura = C_UnitAuras.GetAuraDataByIndex(unitID, i, "HELPFUL");
+        if not aura then break end
+        
+        if healingSpells[aura.spellId] and aura.sourceUnit == unitID then
+            print("Healing spell detected on", UnitName(unitID), "Spell:", aura.spellId);
+            return true;
+        end
+    end
+
+    return false;
+end
+
+function CCHelper:CataclysmHandleZoneChanged()
+    local IsInInstance, instanceType = IsInInstance();
+
+    if instanceType ~= "arena" then
+        self.healerUnitID = nil;
+    end
+end
+
+
+

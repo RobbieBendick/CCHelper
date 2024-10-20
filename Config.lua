@@ -353,10 +353,18 @@ function CCHelper:OnInitialize()
     if not isCata then
         self:RegisterEvent("ARENA_PREP_OPPONENT_SPECIALIZATIONS", "SetEnemyArenaHealerID");
     end
-    self:RegisterEvent("ARENA_OPPONENT_UPDATE", "SetEnemyArenaHealerID");
+
+    if not isCata then
+        self:RegisterEvent("ARENA_OPPONENT_UPDATE", "SetEnemyArenaHealerID");
+    else
+        self:RegisterEvent("ARENA_OPPONENT_UPDATE", "CataclysmIdentifyHealer");
+        self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", "CataclysmIdentifyHealer");
+        self:RegisterEvent("ZONE_CHANGED_NEW_AREA", "CataclysmHandleZoneChanged");
+    end
 
     self:RegisterChatCommand("cc", "HandleSlashCommand");
     self:RegisterChatCommand("cchelp", "AnotherHandleSlashCommand");
     self:RegisterChatCommand("cchelper", "AnotherHandleSlashCommand");
     self:RegisterChatCommand("rl", "Reload");
 end
+
